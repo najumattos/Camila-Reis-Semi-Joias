@@ -1,0 +1,6 @@
+@Camila_Reis_Semi_Joias.API_HostAddress = http://localhost:5260
+
+GET {{Camila_Reis_Semi_Joias.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
