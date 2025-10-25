@@ -1,14 +1,11 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Identity;
 
 namespace Camila_Reis_Semi_Joias.API.Models;
 
 [Table("Usuario")]
-public class Usuario
+public class Usuario : IdentityUser
 {
     [Key]
     public uint IdUsuario { get; set; }
