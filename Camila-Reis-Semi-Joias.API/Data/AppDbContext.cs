@@ -81,7 +81,11 @@ namespace Camila_Reis_Semi_Joias.API.Data;
     {
         List<Categoria> categorias = new()
         {
-            // Criar suas categorias
+            new(){IdCategoria = 1, Nome ="Colares"},
+            new(){IdCategoria = 2, Nome ="Aneis"},
+            new(){IdCategoria = 3, Nome ="Pulseiras"},
+            new(){IdCategoria = 4, Nome ="Brincos"},
+            new(){IdCategoria = 5, Nome ="Conjuntos"},
         };
         builder.Entity<Categoria>().HasData(categorias);
     }
@@ -90,7 +94,36 @@ namespace Camila_Reis_Semi_Joias.API.Data;
     {
         List<Produto> produtos = new()
         {
-            // Criar seus produtos
+            new(){IdProduto = 1,
+                Nome = "Anel Borboleta Ouro",
+                Descricao = "",
+                Quantidade = 5,
+                ValorCusto = 50.00,
+                ValorVenda = 75.00,
+                Foto = "",
+                Destaque = false,
+                CategoriaId = 2
+            },
+            new(){IdProduto = 2,
+                Nome = "Anel Coração Prata",
+                Descricao = "",
+                Quantidade = 5,
+                ValorCusto = 65.00,
+                ValorVenda = 90.00,
+                Foto = "",
+                Destaque = false,
+                CategoriaId = 2
+            },
+            new(){IdProduto = 3,
+                Nome = "Anel Duplo Coração Prata",
+                Descricao = "",
+                Quantidade = 5,
+                ValorCusto = 90.00,
+                ValorVenda = 115.00,
+                Foto = "",
+                Destaque = false,
+                CategoriaId = 2
+            }
         };
         builder.Entity<Produto>().HasData(produtos);
     }

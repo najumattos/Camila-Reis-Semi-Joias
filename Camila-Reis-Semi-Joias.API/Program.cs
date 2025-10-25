@@ -84,7 +84,7 @@ builder.Services.AddSwaggerGen(c =>
     {
         Title = "Camila Reis Semi Joias API",
         Version = "v1",
-        Description = "API de fornecimento de dados de produtos"
+        Description = "API de fornecimento de dados de Semi Joias"
     });
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
