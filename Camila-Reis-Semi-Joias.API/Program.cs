@@ -1,6 +1,8 @@
 using System.Text;
 using Camila_Reis_Semi_Joias.API.Data;
 using Camila_Reis_Semi_Joias.API.Models;
+using Camila_Reis_Semi_Joias.API.Services.Implementations;
+using Camila_Reis_Semi_Joias.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -64,7 +66,13 @@ builder.Services.AddAuthentication(options =>
 // Adicionar a Autorização
 builder.Services.AddAuthorization();
 
-// Registro dos Serviços 
+// Serviço de Arquivos
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IFileService, FileService>();
+
+// Registro dos Serviços Customizados
+builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Configuração do CORS
 builder.Services.AddCors(options =>

@@ -15,12 +15,10 @@ public class Categoria
     public string Nome { get; set; }
 
     [Display(Prompt = "Escolha uma Foto")]
-    [Required(ErrorMessage = "Escolha uma Foto")]
     [StringLength(300)]
     public string Foto { get; set; }
 
     [Display(Prompt="Informe uma Cor")]
-    [Required(ErrorMessage = "Informe uma Cor")]
     [StringLength(26)]
     public string Cor { get; set; }
 

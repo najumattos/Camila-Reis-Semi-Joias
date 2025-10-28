@@ -16,7 +16,6 @@ public class Produto
     public string Nome { get; set; }
 
     [Display(Name = "Descrição", Prompt = "Descreva o Produto")]
-    [Required(ErrorMessage = "Descreva o Produto")]
     [StringLength(3000)]
     public string Descricao { get; set; }
 
@@ -37,7 +36,6 @@ public class Produto
     public double ValorVenda { get; set; }
 
     [Display(Prompt = "Escolha uma Foto")]
-    [Required(ErrorMessage = "Escolha uma Foto")]
     [StringLength(300)]
     public string Foto { get; set; }
 
