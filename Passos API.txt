@@ -80,8 +80,8 @@ public class AppDbContext : IdentityDbContext<Usuario>
             },
             new IdentityRole() {
                Id = "ddf093a6-6cb5-4ff7-9a64-83da34aee005",
-               Name = "Usuário",
-               NormalizedName = "USUÁRIO"
+               Name = "Cliente",
+               NormalizedName = "CLIENTE"
             },
         ];
         builder.Entity<IdentityRole>().HasData(roles);
@@ -294,7 +294,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "GStore v1");
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "<NOME DO PROJETO> v1");
         c.RoutePrefix = string.Empty;
     });
 }
@@ -448,6 +448,7 @@ public class UserDto
     public string Nome { get; set; } 
     public DateTime? DataNascimento { get; set; }
     public string Foto { get; set; } 
+    public string Perfil { get; set; }
 }
 
 public class AuthResponseDto
@@ -550,13 +551,13 @@ public class FileService : IFileService
 
 
 24. Criar na pasta Interfaces a interface IJwtService.cs:
-using <NOME DO PROJETO>.API.Models;
+using <NOME DO PROJETO>.API.DTOs;
 
 namespace <NOME DO PROJETO>.API.Services.Interfaces;
 
 public interface IJwtService
 {
-    string GenerateToken(Usuario user);
+    string GenerateToken(UserDto user);
 }
 
 
@@ -579,7 +580,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using <NOME DO PROJETO>.API.Services.Interfaces;
-using <NOME DO PROJETO>.API.Models;
+using <NOME DO PROJETO>.API.DTOs;
 
 namespace <NOME DO PROJETO>.API.Services.Implementations;
 
@@ -592,7 +593,7 @@ public class JwtService : IJwtService
         _configuration = configuration;
     }
 
-    public string GenerateToken(Usuario user)
+    public string GenerateToken(UserDto user)
     {
         var jwtSettings = _configuration.GetSection("JwtSettings");
         var secretKey = jwtSettings["SecretKey"];
@@ -608,7 +609,8 @@ public class JwtService : IJwtService
             new Claim(ClaimTypes.NameIdentifier, user.Id),
             new Claim(ClaimTypes.Email, user.Email!),
             new Claim(ClaimTypes.Name, user.Nome),
-            // new Claim("foto", user.Foto ?? "/img/usuarios/no-photo.png"),
+            new Claim("foto", user.Foto ?? "/img/usuarios/no-photo.png"),
+            new Claim(ClaimTypes.Role, user.Perfil),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
         };
@@ -626,11 +628,15 @@ public class JwtService : IJwtService
 }
 
 
+EXTRA: COPIAR DA REDE A PASTA HELPERS PARA SEU PROJETO.API
+
+
 27. Criar na pasta Implementations a classe AuthService.cs:
 using Microsoft.AspNetCore.Identity;
 using <NOME DO PROJETO>.API.DTOs;
 using <NOME DO PROJETO>.API.Services.Interfaces;
 using <NOME DO PROJETO>.API.Models;
+using <NOME DO PROJETO>.API.Helpers;
 
 namespace <NOME DO PROJETO>.API.Services.Implementations;
 
@@ -659,7 +665,7 @@ public class AuthService : IAuthService
         var existingUser = await _userManager.FindByEmailAsync(registerDto.Email);
         if (existingUser != null)
         {
-            return null;
+            throw new ArgumentException("Email já está em uso.");
         }
 
         // Salvar a foto se existir
@@ -675,7 +681,7 @@ public class AuthService : IAuthService
             Email = registerDto.Email,
             Nome = registerDto.Nome,
             DataNascimento = registerDto.DataNascimento,
-            Foto = fotoPath // Armazena "img/usuarios/guid.ext"
+            Foto = fotoPath
         };
 
         var result = await _userManager.CreateAsync(user, registerDto.Senha);
@@ -683,18 +689,23 @@ public class AuthService : IAuthService
         {
             if (fotoPath != null)
                 await _fileService.DeleteFileAsync(fotoPath);
-            return null;
+
+            var errors = string.Join(", ", result.Errors.Select(e => TranslateIdentityErrors.TranslateErrorMessage(e.Code)));
+            throw new ArgumentException($"Falha ao criar usuário: {errors}");
         }
 
-        var token = _jwtService.GenerateToken(user);
+        await _userManager.AddToRoleAsync(user, "Cliente");
+
         var userDto = new UserDto
         {
             Id = user.Id,
             Email = user.Email,
             Nome = user.Nome,
             DataNascimento = user.DataNascimento,
-            Foto = fotoPath != null ? _fileService.GetFileUrl(fotoPath) : null
+            Foto = fotoPath != null ? _fileService.GetFileUrl(fotoPath) : null,
+            Perfil = string.Join(", ", await _userManager.GetRolesAsync(user))
         };
+        var token = _jwtService.GenerateToken(userDto);
 
         return new AuthResponseDto
         {
@@ -709,24 +720,25 @@ public class AuthService : IAuthService
         var user = await _userManager.FindByEmailAsync(loginDto.Email);
         if (user == null)
         {
-            return null;
+            throw new UnauthorizedAccessException("Usuário e/ou Senha Inválidos.");
         }
 
         var result = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Senha, false);
         if (!result.Succeeded)
         {
-            return null;
+            throw new UnauthorizedAccessException("Usuário e/ou Senha Inválidos.");
         }
 
-        var token = _jwtService.GenerateToken(user);
         var userDto = new UserDto
         {
             Id = user.Id,
             Email = user.Email,
             Nome = user.Nome,
             DataNascimento = user.DataNascimento,
-            Foto = !string.IsNullOrEmpty(user.Foto) ? _fileService.GetFileUrl(user.Foto) : null
+            Foto = !string.IsNullOrEmpty(user.Foto) ? _fileService.GetFileUrl(user.Foto) : null,
+            Perfil = string.Join(", ", await _userManager.GetRolesAsync(user))
         };
+        var token = _jwtService.GenerateToken(userDto);
 
         return new AuthResponseDto
         {
@@ -741,7 +753,7 @@ public class AuthService : IAuthService
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
         {
-            return null;
+            throw new KeyNotFoundException("Usuário não encontrado.");
         }
 
         return new UserDto
@@ -750,7 +762,8 @@ public class AuthService : IAuthService
             Email = user.Email,
             Nome = user.Nome,
             DataNascimento = user.DataNascimento,
-            Foto = !string.IsNullOrEmpty(user.Foto) ? _fileService.GetFileUrl(user.Foto) : null
+            Foto = !string.IsNullOrEmpty(user.Foto) ? _fileService.GetFileUrl(user.Foto) : null,
+            Perfil = string.Join(", ", await _userManager.GetRolesAsync(user))
         };
     }
 }
@@ -759,6 +772,7 @@ public class AuthService : IAuthService
 28. Alterando o Program.cs para registrar os serviços:
 using System.Text;
 using <NOME DO PROJETO>.API.Data;
+using <NOME DO PROJETO>.API.Middleware;
 using <NOME DO PROJETO>.API.Models;
 using <NOME DO PROJETO>.API.Services.Implementations;
 using <NOME DO PROJETO>.API.Services.Interfaces;
@@ -894,16 +908,18 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "GStore v1");
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "<NOME DO PROJETO> v1");
         c.RoutePrefix = string.Empty;
     });
 }
 
 app.UseHttpsRedirection();
 
-app.UseStaticFiles(); 
+app.UseStaticFiles();
 
 app.UseCors("AllowAll");
+
+app.UseMiddleware<ErrorHandlingMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
